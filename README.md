@@ -35,8 +35,16 @@ of the input is still processed.
 ## Input format
 
 One fixture per line: two team names separated by `vs`, `v`, `@` or `-`,
-optionally followed by a comma or `|` and a date/time. If the date/time is
-omitted the fixture is printed with `TBD`.
+followed by zero or more fields separated by a comma or `|`. Each trailing
+field can be a date/time or a competition name, in either order - whichever
+fields parse as a date become the kickoff, everything else is kept as
+competition text and printed in parentheses. If no date/time is given the
+fixture is printed with `TBD`; if no competition is given it's left out.
+
+```
+$ echo "Man Utd v Spurs, Premier League, 12/9/2026 15:00" | python -m fixturefmt
+2026-09-12 15:00  Manchester United vs Tottenham Hotspur  (Premier League)
+```
 
 Team name normalisation currently covers a small, hand-picked set of common
 abbreviations (see `TEAM_ALIASES` in `fixturefmt/formatter.py`). Anything not

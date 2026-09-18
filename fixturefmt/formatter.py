@@ -51,10 +51,14 @@ class Fixture:
     home: str
     away: str
     kickoff: datetime | None
+    competition: str | None = None
 
     def format(self) -> str:
         when = self.kickoff.strftime("%Y-%m-%d %H:%M") if self.kickoff else "TBD"
-        return f"{when}  {self.home} vs {self.away}"
+        line = f"{when}  {self.home} vs {self.away}"
+        if self.competition:
+            line += f"  ({self.competition})"
+        return line
 
 
 def normalise_team(name: str) -> str:
@@ -75,7 +79,13 @@ def parse_datetime(text: str) -> datetime:
 
 
 def parse_line(line: str) -> Fixture:
-    """Parse one fixture line such as "Man Utd v Spurs, 12/9/2026 15:00"."""
+    """Parse one fixture line such as "Man Utd v Spurs, Premier League, 12/9/2026 15:00".
+
+    Fields after the teams can appear in either order - a date/time and a
+    competition name aren't distinguishable by position alone, so each
+    trailing field is tried as a date first and kept as competition text if
+    that fails.
+    """
     fields = _FIELD_SPLIT_RE.split(line.strip())
     teams_part = fields[0]
 
@@ -85,7 +95,15 @@ def parse_line(line: str) -> Fixture:
     home, away = (normalise_team(t) for t in match)
 
     kickoff = None
-    if len(fields) > 1 and fields[1].strip():
-        kickoff = parse_datetime(fields[1])
+    competition_parts = []
+    for field in fields[1:]:
+        field = field.strip()
+        if not field:
+            continue
+        try:
+            kickoff = parse_datetime(field)
+        except FixtureParseError:
+            competition_parts.append(field)
+    competition = ", ".join(competition_parts) if competition_parts else None
 
-    return Fixture(home=home, away=away, kickoff=kickoff)
+    return Fixture(home=home, away=away, kickoff=kickoff, competition=competition)
